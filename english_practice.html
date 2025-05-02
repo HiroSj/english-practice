@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>英語発音練習</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 10px 20px; font-size: 18px; }
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>英語を話してみよう！</h1>
+  <p id="phrase">Let's go!</p>
+  <button onclick="playPhrase()">音声を聞く</button>
+  <button onclick="startRecognition()">話してみる</button>
+  <div id="result"></div>
+
+  <script>
+    const targetPhrase = "let's go";
+
+    function playPhrase() {
+      const utter = new SpeechSynthesisUtterance(targetPhrase);
+      utter.lang = "en-US";
+      speechSynthesis.speak(utter);
+    }
+
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const spoken = event.results[0][0].transcript.toLowerCase();
+        document.getElementById("result").innerText =
+          spoken.includes(targetPhrase) ? "✅ OK!" : "❌もう一回！";
+      };
+
+      recognition.onerror = function() {
+        document.getElementById("result").innerText = "⚠️ 認識できませんでした";
+      };
+    }
+  </script>
+</body>
+</html>
