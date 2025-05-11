@@ -69,6 +69,7 @@
         var phrases = [];
         var currentPhraseIndex = 0;
         var recognition;
+        var isRecognitionActive = false;
         var resultContainer = document.getElementById('result-container');
         var progressFill = document.getElementById('progress-fill');
         var correctCount = 0;
@@ -160,8 +161,12 @@
             checkButton.className = 'button-style';
             checkButton.textContent = 'Check Pronunciation';
             checkButton.onclick = function() {
-                stopPlayback();
-                startRecognition();
+                if (isRecognitionActive) {
+                    stopRecognition();
+                } else {
+                    stopPlayback();
+                    startRecognition();
+                }
             };
             controlContainer.appendChild(checkButton);
         }
@@ -177,19 +182,30 @@
 
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'en-US';
-            recognition.interimResults = true;
+            recognition.interimResults = false;
             recognition.maxAlternatives = 1;
+            isRecognitionActive = true;
 
             recognition.onresult = function(event) {
                 var userSpeech = event.results[0][0].transcript.toLowerCase();
                 evaluateResult(userSpeech, expectedText);
+                isRecognitionActive = false;
             };
 
             recognition.onerror = function(event) {
                 console.error('Recognition error:', event.error);
+                isRecognitionActive = false;
             };
 
             recognition.start();
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                isRecognitionActive = false;
+            }
         }
 
         function evaluateResult(userSpeech, expectedText) {
