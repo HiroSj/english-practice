@@ -15,6 +15,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-right: 10px;
         }
         .button-style:hover { background-color: #2980b9; }
 
@@ -24,7 +25,7 @@
         .video-container {
             position: relative;
             width: 100%;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            padding-bottom: 56.25%;
             height: 0;
             overflow: hidden;
         }
@@ -98,11 +99,20 @@
                 playButton.className = 'button-style';
                 playButton.textContent = 'Play';
                 playButton.onclick = function() {
+                    stopRecognition();
                     playPhrase(phrase.start, phrase.end);
+                };
+
+                var stopButton = document.createElement('button');
+                stopButton.className = 'button-style';
+                stopButton.textContent = 'Stop';
+                stopButton.onclick = function() {
+                    stopPlayback();
                 };
 
                 phraseDiv.appendChild(document.createElement('br'));
                 phraseDiv.appendChild(playButton);
+                phraseDiv.appendChild(stopButton);
                 container.appendChild(phraseDiv);
             } else {
                 container.textContent = 'All phrases completed!';
@@ -117,6 +127,11 @@
                 player.pauseVideo();
                 showCheckButton();
             }, (endTime - startTime) * 1000);
+        }
+
+        function stopPlayback() {
+            player.pauseVideo();
+            stopRecognition();
         }
 
         function showCheckButton() {
@@ -164,6 +179,14 @@
             };
 
             recognition.start();
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                resultContainer.textContent = '';
+            }
         }
 
         function evaluateResult(userSpeech, expectedText) {
