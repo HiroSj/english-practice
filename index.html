@@ -6,7 +6,7 @@
     <title>Phrase Replay System</title>
     <script src="https://www.youtube.com/iframe_api"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
+        body { background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
         .button-style {
             background-color: #3498db;
             color: #fff;
@@ -20,11 +20,11 @@
         .button-style:hover { background-color: #2980b9; }
 
         .phrase-container { margin-bottom: 15px; }
-        .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #555; }
+        .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #fff; }
         .interim-result-container { margin-top: 10px; font-size: 14px; color: #3498db; }
         .progress-bar {
             width: 100%;
-            background-color: #ddd;
+            background-color: #444;
             border-radius: 5px;
             overflow: hidden;
             margin-bottom: 20px;
@@ -106,7 +106,6 @@
             var controlContainer = document.getElementById('control-container');
             container.innerHTML = '';
             controlContainer.innerHTML = '';
-            resultContainer.textContent = '';
             interimResultContainer.textContent = '';
 
             if (currentPhraseIndex < phrases.length) {
@@ -134,42 +133,11 @@
             }
         }
 
-        function playPhrase(startTime, endTime) {
-            player.seekTo(startTime);
-            player.playVideo();
-
-            setTimeout(function() {
-                player.pauseVideo();
-                showCheckButton();
-            }, (endTime - startTime) * 1000);
-        }
-
-        function showCheckButton() {
-            var controlContainer = document.getElementById('control-container');
-            controlContainer.innerHTML = '';
-
-            var checkButton = document.createElement('button');
-            checkButton.className = 'button-style';
-            checkButton.textContent = 'Check Pronunciation';
-            checkButton.onclick = function() {
-                if (isRecognitionActive) {
-                    stopRecognition();
-                } else {
-                    startRecognition();
-                }
-            };
-            controlContainer.appendChild(checkButton);
-        }
-
         function startRecognition() {
+            interimResultContainer.textContent = '';
+            resultContainer.textContent = '';
             var phrase = phrases[currentPhraseIndex];
             var expectedText = phrase.text.toLowerCase();
-            resultContainer.textContent = '';
-
-            if (!('webkitSpeechRecognition' in window)) {
-                alert('Speech Recognition not supported');
-                return;
-            }
 
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'en-US';
@@ -202,20 +170,6 @@
                 interimResultContainer.textContent = '';
             }
         }
-
-        function evaluateResult(userSpeech, expectedText) {
-            var similarity = calculateSimilarity(expectedText, userSpeech);
-            var message = similarity >= 0.8 ? '✅ Great job!' : similarity >= 0.6 ? '👍 Close!' : '❌ Try again!';
-            resultContainer.textContent = message;
-            updateProgress();
-        }
-
-        function updateProgress() {
-            var progress = (correctCount / phrases.length) * 100;
-            progressFill.style.width = progress + '%';
-            progressFill.textContent = progress.toFixed(0) + '% completed';
-        }
-
     </script>
 </body>
 </html>
