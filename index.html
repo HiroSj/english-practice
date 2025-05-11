@@ -56,7 +56,7 @@
 <body>
     <h1>Phrase Replay System</h1>
     <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill">0% completed</div>
+        <div class="progress-fill" id="progress-fill">0/0 completed</div>
     </div>
     <div class="video-container">
         <div id="player"></div>
@@ -96,6 +96,7 @@
                 .then(response => response.json())
                 .then(data => {
                     phrases = data;
+                    updateProgress();
                     renderPhrase();
                 })
                 .catch(error => console.error('Error loading phrases:', error));
@@ -133,11 +134,18 @@
             }
         }
 
+        function playPhrase(startTime, endTime) {
+            player.seekTo(startTime);
+            player.playVideo();
+        }
+
         function startRecognition() {
-            interimResultContainer.textContent = '';
-            resultContainer.textContent = '';
             var phrase = phrases[currentPhraseIndex];
             var expectedText = phrase.text.toLowerCase();
+            var maxDuration = expectedText.split(' ').length * 800;
+
+            interimResultContainer.textContent = '';
+            resultContainer.textContent = '';
 
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'en-US';
@@ -160,6 +168,16 @@
             };
 
             recognition.start();
+
+            setTimeout(function() {
+                if (isRecognitionActive) {
+                    stopRecognition();
+                }
+            }, maxDuration);
+        }
+
+        function updateProgress() {
+            progressFill.textContent = correctCount + '/' + phrases.length + ' completed';
         }
 
         function stopRecognition() {
