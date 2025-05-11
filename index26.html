@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Phrase Replay System</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
+        .button-style {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .button-style:hover { background-color: #2980b9; }
+        .phrase-container { margin-bottom: 15px; }
+        .button-group { margin-top: 10px; display: flex; gap: 10px; }
+        .progress-bar {
+            width: 100%;
+            background-color: #444;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .progress-fill {
+            height: 20px;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .progress-text {
+            position: absolute;
+            right: 10px;
+            top: 0;
+            color: #fff;
+            line-height: 20px;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .speech-output { color: #fff; margin-top: 10px; }
+        .feedback { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Phrase Replay System</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-text" id="progress-text">0/0</div>
+    </div>
+    <div class="video-container">
+        <div id="player"></div>
+    </div>
+    <div id="phrases-container"></div>
+    <div class="speech-output" id="speech-output"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <script>
+        var player;
+        var phrases = [];
+        var currentPhraseIndex = 0;
+        var correctCount = 0;
+
+        function renderButtons() {
+            var container = document.getElementById('phrases-container');
+            container.innerHTML = '';
+
+            var buttonGroup1 = document.createElement('div');
+            buttonGroup1.className = 'button-group';
+
+            var playButton = document.createElement('button');
+            playButton.className = 'button-style';
+            playButton.textContent = 'Play';
+            buttonGroup1.appendChild(playButton);
+
+            var stopButton = document.createElement('button');
+            stopButton.className = 'button-style';
+            stopButton.textContent = 'Stop';
+            buttonGroup1.appendChild(stopButton);
+
+            container.appendChild(buttonGroup1);
+
+            container.appendChild(document.createElement('br'));
+
+            var checkButton = document.createElement('button');
+            checkButton.className = 'button-style';
+            checkButton.textContent = 'Check Pronunciation';
+            container.appendChild(checkButton);
+
+            container.appendChild(document.createElement('br'));
+
+            var buttonGroup2 = document.createElement('div');
+            buttonGroup2.className = 'button-group';
+
+            var prevButton = document.createElement('button');
+            prevButton.className = 'button-style';
+            prevButton.textContent = '⟵';
+            buttonGroup2.appendChild(prevButton);
+
+            var nextButton = document.createElement('button');
+            nextButton.className = 'button-style';
+            nextButton.textContent = '⟶';
+            buttonGroup2.appendChild(nextButton);
+
+            container.appendChild(buttonGroup2);
+        }
+
+        function init() {
+            renderButtons();
+        }
+
+        init();
+    </script>
+</body>
+</html>
