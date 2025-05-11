@@ -21,6 +21,19 @@
 
         .phrase-container { margin-bottom: 15px; }
         .result-container { margin-top: 15px; font-size: 14px; color: #555; }
+        .progress-bar {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-fill {
+            height: 20px;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+        }
 
         .video-container {
             position: relative;
@@ -41,6 +54,9 @@
 </head>
 <body>
     <h1>Phrase Replay System</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
     <div class="video-container">
         <div id="player"></div>
     </div>
@@ -54,6 +70,8 @@
         var currentPhraseIndex = 0;
         var recognition;
         var resultContainer = document.getElementById('result-container');
+        var progressFill = document.getElementById('progress-fill');
+        var correctCount = 0;
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
@@ -142,6 +160,7 @@
             checkButton.className = 'button-style';
             checkButton.textContent = 'Check Pronunciation';
             checkButton.onclick = function() {
+                stopPlayback();
                 startRecognition();
             };
             controlContainer.appendChild(checkButton);
@@ -162,16 +181,8 @@
             recognition.maxAlternatives = 1;
 
             recognition.onresult = function(event) {
-                var interimTranscript = '';
-                for (var i = event.resultIndex; i < event.results.length; i++) {
-                    var transcript = event.results[i][0].transcript.toLowerCase();
-                    if (event.results[i].isFinal) {
-                        evaluateResult(transcript, expectedText);
-                    } else {
-                        interimTranscript += transcript + ' ';
-                    }
-                }
-                resultContainer.textContent = 'You said: ' + interimTranscript;
+                var userSpeech = event.results[0][0].transcript.toLowerCase();
+                evaluateResult(userSpeech, expectedText);
             };
 
             recognition.onerror = function(event) {
@@ -191,11 +202,24 @@
 
         function evaluateResult(userSpeech, expectedText) {
             var similarity = calculateSimilarity(expectedText, userSpeech);
+            var message = '';
+
             if (similarity >= 0.8) {
-                alert('Correct! Similarity: ' + (similarity * 100).toFixed(2) + '%');
+                correctCount++;
+                message = 'Great job! Excellent pronunciation!';
+            } else if (similarity >= 0.6) {
+                message = 'Close! You almost got it!';
             } else {
-                alert('Try again! You said: ' + userSpeech + ' (Similarity: ' + (similarity * 100).toFixed(2) + '%)');
+                message = 'Try again!';
             }
+
+            alert(message);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            var progress = (correctCount / phrases.length) * 100;
+            progressFill.style.width = progress + '%';
         }
 
         function calculateSimilarity(str1, str2) {
