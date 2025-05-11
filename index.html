@@ -104,9 +104,7 @@
 
         function renderPhrase() {
             var container = document.getElementById('phrases-container');
-            var controlContainer = document.getElementById('control-container');
             container.innerHTML = '';
-            controlContainer.innerHTML = '';
             interimResultContainer.textContent = '';
 
             if (currentPhraseIndex < phrases.length) {
@@ -137,56 +135,15 @@
         function playPhrase(startTime, endTime) {
             player.seekTo(startTime);
             player.playVideo();
-        }
-
-        function startRecognition() {
-            var phrase = phrases[currentPhraseIndex];
-            var expectedText = phrase.text.toLowerCase();
-            var maxDuration = expectedText.split(' ').length * 800;
-
-            interimResultContainer.textContent = '';
-            resultContainer.textContent = '';
-
-            recognition = new webkitSpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = true;
-            recognition.maxAlternatives = 1;
-            isRecognitionActive = true;
-
-            recognition.onresult = function(event) {
-                var interimTranscript = '';
-                for (var i = event.resultIndex; i < event.results.length; i++) {
-                    var transcript = event.results[i][0].transcript.toLowerCase();
-                    if (event.results[i].isFinal) {
-                        evaluateResult(transcript, expectedText);
-                        isRecognitionActive = false;
-                    } else {
-                        interimTranscript += transcript + ' ';
-                    }
-                }
-                interimResultContainer.textContent = interimTranscript;
-            };
-
-            recognition.start();
 
             setTimeout(function() {
-                if (isRecognitionActive) {
-                    stopRecognition();
-                }
-            }, maxDuration);
+                player.pauseVideo();
+            }, (endTime - startTime) * 1000);
         }
 
         function updateProgress() {
             progressFill.textContent = correctCount + '/' + phrases.length + ' completed';
-        }
-
-        function stopRecognition() {
-            if (recognition) {
-                recognition.stop();
-                recognition = null;
-                isRecognitionActive = false;
-                interimResultContainer.textContent = '';
-            }
+            progressFill.style.width = (correctCount / phrases.length) * 100 + '%';
         }
     </script>
 </body>
