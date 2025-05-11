@@ -21,7 +21,6 @@
 
         .phrase-container { margin-bottom: 15px; }
         .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #fff; }
-        .interim-result-container { margin-top: 10px; font-size: 14px; color: #3498db; }
         .progress-bar {
             width: 100%;
             background-color: #444;
@@ -63,8 +62,6 @@
     </div>
     <div id="phrases-container"></div>
     <div id="control-container"></div>
-    <div id="result-container" class="result-container"></div>
-    <div id="interim-result-container" class="interim-result-container"></div>
 
     <script>
         var player;
@@ -72,8 +69,6 @@
         var currentPhraseIndex = 0;
         var recognition;
         var isRecognitionActive = false;
-        var resultContainer = document.getElementById('result-container');
-        var interimResultContainer = document.getElementById('interim-result-container');
         var progressFill = document.getElementById('progress-fill');
         var correctCount = 0;
 
@@ -105,7 +100,6 @@
         function renderPhrase() {
             var container = document.getElementById('phrases-container');
             container.innerHTML = '';
-            interimResultContainer.textContent = '';
 
             if (currentPhraseIndex < phrases.length) {
                 var phrase = phrases[currentPhraseIndex];
@@ -124,8 +118,20 @@
                     playPhrase(phrase.start, phrase.end);
                 };
 
+                var checkButton = document.createElement('button');
+                checkButton.className = 'button-style';
+                checkButton.textContent = 'Check Pronunciation';
+                checkButton.onclick = function() {
+                    if (isRecognitionActive) {
+                        stopRecognition();
+                    } else {
+                        startRecognition();
+                    }
+                };
+
                 phraseDiv.appendChild(document.createElement('br'));
                 phraseDiv.appendChild(playButton);
+                phraseDiv.appendChild(checkButton);
                 container.appendChild(phraseDiv);
             } else {
                 container.textContent = 'All phrases completed!';
@@ -139,6 +145,47 @@
             setTimeout(function() {
                 player.pauseVideo();
             }, (endTime - startTime) * 1000);
+        }
+
+        function startRecognition() {
+            var phrase = phrases[currentPhraseIndex];
+            var expectedText = phrase.text.toLowerCase();
+            var maxDuration = expectedText.split(' ').length * 800;
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            isRecognitionActive = true;
+
+            recognition.onresult = function(event) {
+                var userSpeech = event.results[0][0].transcript.toLowerCase();
+                var similarity = calculateSimilarity(expectedText, userSpeech);
+                var message = similarity >= 0.8 ? 'Great job! ✅' : similarity >= 0.6 ? 'Close! 👍' : 'Try again! ❌';
+                alert(message);
+                isRecognitionActive = false;
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Recognition error:', event.error);
+                isRecognitionActive = false;
+            };
+
+            recognition.start();
+
+            setTimeout(function() {
+                if (isRecognitionActive) {
+                    stopRecognition();
+                }
+            }, maxDuration);
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                isRecognitionActive = false;
+            }
         }
 
         function updateProgress() {
