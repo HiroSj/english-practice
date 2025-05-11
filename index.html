@@ -20,7 +20,7 @@
         .button-style:hover { background-color: #2980b9; }
 
         .phrase-container { margin-bottom: 15px; }
-        .result-container { margin-top: 15px; font-size: 14px; color: #555; }
+        .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #555; }
         .progress-bar {
             width: 100%;
             background-color: #ddd;
@@ -102,7 +102,7 @@
             var controlContainer = document.getElementById('control-container');
             container.innerHTML = '';
             controlContainer.innerHTML = '';
-            resultContainer.innerHTML = '';
+            resultContainer.textContent = '';
 
             if (currentPhraseIndex < phrases.length) {
                 var phrase = phrases[currentPhraseIndex];
@@ -192,28 +192,20 @@
             recognition.start();
         }
 
-        function stopRecognition() {
-            if (recognition) {
-                recognition.stop();
-                recognition = null;
-                resultContainer.textContent = '';
-            }
-        }
-
         function evaluateResult(userSpeech, expectedText) {
             var similarity = calculateSimilarity(expectedText, userSpeech);
             var message = '';
 
             if (similarity >= 0.8) {
                 correctCount++;
-                message = 'Great job! Excellent pronunciation!';
+                message = 'Great job! Excellent pronunciation! ✅';
             } else if (similarity >= 0.6) {
-                message = 'Close! You almost got it!';
+                message = 'Close! You almost got it! 👍';
             } else {
-                message = 'Try again!';
+                message = 'Try again! ❌';
             }
 
-            alert(message);
+            resultContainer.textContent = message;
             updateProgress();
         }
 
