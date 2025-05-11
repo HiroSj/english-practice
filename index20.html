@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Phrase Replay System</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
+        .button-style {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .button-style:hover { background-color: #2980b9; }
+        .phrase-container { margin-bottom: 15px; }
+        .button-group { margin-top: 10px; display: flex; gap: 10px; }
+        .progress-bar {
+            width: 100%;
+            background-color: #444;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .progress-fill {
+            height: 20px;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+        }
+        .progress-text {
+            position: absolute;
+            right: 10px;
+            top: 0;
+            color: #fff;
+            line-height: 20px;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+        .video-container iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .speech-output { color: #fff; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Phrase Replay System</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-text" id="progress-text">0/0</div>
+    </div>
+    <div class="video-container">
+        <div id="player"></div>
+    </div>
+    <div id="phrases-container"></div>
+    <div class="speech-output" id="speech-output"></div>
+
+    <script>
+        var player;
+        var phrases = [];
+        var currentPhraseIndex = 0;
+        var correctCount = 0;
+        var isRecognitionActive = false;
+        var recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        var speechOutput = document.getElementById('speech-output');
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: 'IOHTbJd3rGM',
+                playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 0, autoplay: 0, disablekb: 1 }
+            });
+        }
+
+        function loadPhrases() {
+            fetch('./phrases.json')
+                .then(response => response.json())
+                .then(data => {
+                    phrases = data;
+                    renderPhrase();
+                })
+                .catch(error => console.error('Error loading phrases:', error));
+        }
+
+        function renderPhrase() {
+            var container = document.getElementById('phrases-container');
+            container.innerHTML = '';
+            var phrase = phrases[currentPhraseIndex];
+
+            var phraseDiv = document.createElement('div');
+            phraseDiv.className = 'phrase-container';
+            phraseDiv.textContent = phrase.text;
+
+            var buttonGroup1 = document.createElement('div');
+            buttonGroup1.className = 'button-group';
+
+            var playButton = document.createElement('button');
+            playButton.className = 'button-style';
+            playButton.textContent = 'Play';
+            playButton.onclick = function() { playPhrase(phrase.start, phrase.end); };
+
+            var stopButton = document.createElement('button');
+            stopButton.className = 'button-style';
+            stopButton.textContent = 'Stop';
+            stopButton.onclick = function() { player.pauseVideo(); };
+
+            buttonGroup1.appendChild(playButton);
+            buttonGroup1.appendChild(stopButton);
+            phraseDiv.appendChild(buttonGroup1);
+
+            phraseDiv.appendChild(document.createElement('br'));
+
+            var checkButton = document.createElement('button');
+            checkButton.className = 'button-style';
+            checkButton.textContent = 'Check Pronunciation';
+            checkButton.onclick = function() { toggleRecognition(phrase.text); };
+            phraseDiv.appendChild(checkButton);
+
+            phraseDiv.appendChild(document.createElement('br'));
+
+            var buttonGroup2 = document.createElement('div');
+            buttonGroup2.className = 'button-group';
+
+            var prevButton = document.createElement('button');
+            prevButton.className = 'button-style';
+            prevButton.textContent = '⟵';
+            prevButton.onclick = function() {
+                currentPhraseIndex = Math.max(currentPhraseIndex - 1, 0);
+                renderPhrase();
+            };
+
+            var nextButton = document.createElement('button');
+            nextButton.className = 'button-style';
+            nextButton.textContent = '⟶';
+            nextButton.onclick = function() {
+                currentPhraseIndex = Math.min(currentPhraseIndex + 1, phrases.length - 1);
+                renderPhrase();
+            };
+
+            buttonGroup2.appendChild(prevButton);
+            buttonGroup2.appendChild(nextButton);
+            phraseDiv.appendChild(buttonGroup2);
+
+            container.appendChild(phraseDiv);
+        }
+
+        function playPhrase(startTime, endTime) {
+            player.seekTo(startTime);
+            player.playVideo();
+            setTimeout(function() { player.pauseVideo(); }, (endTime - startTime) * 1000);
+        }
+
+        function toggleRecognition(expectedText) {
+            if (isRecognitionActive) {
+                recognition.stop();
+                isRecognitionActive = false;
+            } else {
+                speechOutput.textContent = '';
+                isRecognitionActive = true;
+                recognition.start();
+                recognition.onresult = function(event) {
+                    var spokenText = event.results[0][0].transcript;
+                    speechOutput.textContent = 'You said: ' + spokenText;
+                };
+            }
+        }
+
+        loadPhrases();
+    </script>
+</body>
+</html>
