@@ -21,6 +21,7 @@
 
         .phrase-container { margin-bottom: 15px; }
         .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #555; }
+        .interim-result-container { margin-top: 10px; font-size: 14px; color: #3498db; }
         .progress-bar {
             width: 100%;
             background-color: #ddd;
@@ -63,6 +64,7 @@
     <div id="phrases-container"></div>
     <div id="control-container"></div>
     <div id="result-container" class="result-container"></div>
+    <div id="interim-result-container" class="interim-result-container"></div>
 
     <script>
         var player;
@@ -71,6 +73,7 @@
         var recognition;
         var isRecognitionActive = false;
         var resultContainer = document.getElementById('result-container');
+        var interimResultContainer = document.getElementById('interim-result-container');
         var progressFill = document.getElementById('progress-fill');
         var correctCount = 0;
 
@@ -104,6 +107,7 @@
             container.innerHTML = '';
             controlContainer.innerHTML = '';
             resultContainer.textContent = '';
+            interimResultContainer.textContent = '';
 
             if (currentPhraseIndex < phrases.length) {
                 var phrase = phrases[currentPhraseIndex];
@@ -182,14 +186,22 @@
 
             recognition = new webkitSpeechRecognition();
             recognition.lang = 'en-US';
-            recognition.interimResults = false;
+            recognition.interimResults = true;
             recognition.maxAlternatives = 1;
             isRecognitionActive = true;
 
             recognition.onresult = function(event) {
-                var userSpeech = event.results[0][0].transcript.toLowerCase();
-                evaluateResult(userSpeech, expectedText);
-                isRecognitionActive = false;
+                var interimTranscript = '';
+                for (var i = event.resultIndex; i < event.results.length; i++) {
+                    var transcript = event.results[i][0].transcript.toLowerCase();
+                    if (event.results[i].isFinal) {
+                        evaluateResult(transcript, expectedText);
+                        isRecognitionActive = false;
+                    } else {
+                        interimTranscript += transcript + ' ';
+                    }
+                }
+                interimResultContainer.textContent = 'You are saying: ' + interimTranscript;
             };
 
             recognition.onerror = function(event) {
@@ -205,22 +217,13 @@
                 recognition.stop();
                 recognition = null;
                 isRecognitionActive = false;
+                interimResultContainer.textContent = '';
             }
         }
 
         function evaluateResult(userSpeech, expectedText) {
             var similarity = calculateSimilarity(expectedText, userSpeech);
-            var message = '';
-
-            if (similarity >= 0.8) {
-                correctCount++;
-                message = 'Great job! Excellent pronunciation! ✅';
-            } else if (similarity >= 0.6) {
-                message = 'Close! You almost got it! 👍';
-            } else {
-                message = 'Try again! ❌';
-            }
-
+            var message = similarity >= 0.8 ? '✅ Great job!' : similarity >= 0.6 ? '👍 Close!' : '❌ Try again!';
             resultContainer.textContent = message;
             updateProgress();
         }
@@ -228,20 +231,6 @@
         function updateProgress() {
             var progress = (correctCount / phrases.length) * 100;
             progressFill.style.width = progress + '%';
-        }
-
-        function calculateSimilarity(str1, str2) {
-            var words1 = str1.split(' ');
-            var words2 = str2.split(' ');
-            var matches = 0;
-
-            words1.forEach(word => {
-                if (words2.includes(word)) {
-                    matches++;
-                }
-            });
-
-            return matches / words1.length;
         }
 
     </script>
