@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Phrase Replay System</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
+        .button-style {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .button-style:hover { background-color: #2980b9; }
+
+        .phrase-container { margin-bottom: 15px; }
+        .result-container { margin-top: 15px; font-size: 14px; color: #555; }
+        .progress-bar {
+            width: 100%;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-fill {
+            height: 20px;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phrase Replay System</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="video-container">
+        <div id="player"></div>
+    </div>
+    <div id="phrases-container"></div>
+    <div id="control-container"></div>
+    <div id="result-container" class="result-container"></div>
+
+    <script>
+        var player;
+        var phrases = [];
+        var currentPhraseIndex = 0;
+        var recognition;
+        var resultContainer = document.getElementById('result-container');
+        var progressFill = document.getElementById('progress-fill');
+        var correctCount = 0;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: 'IOHTbJd3rGM',
+                playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 0, autoplay: 0, disablekb: 1 },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            loadPhrases();
+        }
+
+        function loadPhrases() {
+            fetch('./phrases.json')
+                .then(response => response.json())
+                .then(data => {
+                    phrases = data;
+                    renderPhrase();
+                })
+                .catch(error => console.error('Error loading phrases:', error));
+        }
+
+        function renderPhrase() {
+            var container = document.getElementById('phrases-container');
+            var controlContainer = document.getElementById('control-container');
+            container.innerHTML = '';
+            controlContainer.innerHTML = '';
+            resultContainer.innerHTML = '';
+
+            if (currentPhraseIndex < phrases.length) {
+                var phrase = phrases[currentPhraseIndex];
+                var phraseDiv = document.createElement('div');
+                phraseDiv.className = 'phrase-container';
+
+                var textSpan = document.createElement('span');
+                textSpan.textContent = phrase.text + " ";
+                phraseDiv.appendChild(textSpan);
+
+                var playButton = document.createElement('button');
+                playButton.className = 'button-style';
+                playButton.textContent = 'Play';
+                playButton.onclick = function() {
+                    stopRecognition();
+                    playPhrase(phrase.start, phrase.end);
+                };
+
+                var stopButton = document.createElement('button');
+                stopButton.className = 'button-style';
+                stopButton.textContent = 'Stop';
+                stopButton.onclick = function() {
+                    stopPlayback();
+                };
+
+                phraseDiv.appendChild(document.createElement('br'));
+                phraseDiv.appendChild(playButton);
+                phraseDiv.appendChild(stopButton);
+                container.appendChild(phraseDiv);
+            } else {
+                container.textContent = 'All phrases completed!';
+            }
+        }
+
+        function playPhrase(startTime, endTime) {
+            player.seekTo(startTime);
+            player.playVideo();
+
+            setTimeout(function() {
+                player.pauseVideo();
+                showCheckButton();
+            }, (endTime - startTime) * 1000);
+        }
+
+        function stopPlayback() {
+            player.pauseVideo();
+            stopRecognition();
+        }
+
+        function showCheckButton() {
+            var controlContainer = document.getElementById('control-container');
+            controlContainer.innerHTML = '';
+
+            var checkButton = document.createElement('button');
+            checkButton.className = 'button-style';
+            checkButton.textContent = 'Check Pronunciation';
+            checkButton.onclick = function() {
+                stopPlayback();
+                startRecognition();
+            };
+            controlContainer.appendChild(checkButton);
+        }
+
+        function startRecognition() {
+            var phrase = phrases[currentPhraseIndex];
+            var expectedText = phrase.text.toLowerCase();
+
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Speech Recognition not supported');
+                return;
+            }
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = function(event) {
+                var userSpeech = event.results[0][0].transcript.toLowerCase();
+                evaluateResult(userSpeech, expectedText);
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Recognition error:', event.error);
+            };
+
+            recognition.start();
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                resultContainer.textContent = '';
+            }
+        }
+
+        function evaluateResult(userSpeech, expectedText) {
+            var similarity = calculateSimilarity(expectedText, userSpeech);
+            var message = '';
+
+            if (similarity >= 0.8) {
+                correctCount++;
+                message = 'Great job! Excellent pronunciation!';
+            } else if (similarity >= 0.6) {
+                message = 'Close! You almost got it!';
+            } else {
+                message = 'Try again!';
+            }
+
+            alert(message);
+            updateProgress();
+        }
+
+        function updateProgress() {
+            var progress = (correctCount / phrases.length) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        function calculateSimilarity(str1, str2) {
+            var words1 = str1.split(' ');
+            var words2 = str2.split(' ');
+            var matches = 0;
+
+            words1.forEach(word => {
+                if (words2.includes(word)) {
+                    matches++;
+                }
+            });
+
+            return matches / words1.length;
+        }
+
+    </script>
+</body>
+</html>
