@@ -43,15 +43,11 @@
         <div id="player"></div>
     </div>
     <div id="phrase-container" class="phrase-container"></div>
-    <div class="version">Version: 1.1.0</div>
+    <div class="version">Version: 1.2.0</div>
 
     <script>
         var player;
-        var phrases = [
-            { "text": "Hello, how are you?", "start": 5, "end": 10 },
-            { "text": "I'm fine, thank you.", "start": 12, "end": 17 },
-            { "text": "What is your name?", "start": 20, "end": 25 }
-        ];
+        var phrases = [];
         var currentPhraseIndex = 0;
         var recognition;
         var isRecognitionActive = false;
@@ -61,6 +57,16 @@
                 videoId: 'IOHTbJd3rGM',
                 playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 0, autoplay: 0, disablekb: 1 }
             });
+        }
+
+        function loadPhrases() {
+            fetch('phrases.json')
+                .then(response => response.json())
+                .then(data => {
+                    phrases = data;
+                    renderPhrase();
+                })
+                .catch(error => console.error('Error loading phrases:', error));
         }
 
         function renderPhrase() {
@@ -166,7 +172,7 @@
             return matches / words1.length;
         }
 
-        renderPhrase();
+        loadPhrases();
     </script>
 </body>
 </html>
