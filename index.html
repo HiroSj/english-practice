@@ -56,7 +56,7 @@
 <body>
     <h1>Phrase Replay System</h1>
     <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-fill" id="progress-fill">0% completed</div>
     </div>
     <div class="video-container">
         <div id="player"></div>
@@ -126,16 +126,8 @@
                     playPhrase(phrase.start, phrase.end);
                 };
 
-                var stopButton = document.createElement('button');
-                stopButton.className = 'button-style';
-                stopButton.textContent = 'Stop';
-                stopButton.onclick = function() {
-                    stopPlayback();
-                };
-
                 phraseDiv.appendChild(document.createElement('br'));
                 phraseDiv.appendChild(playButton);
-                phraseDiv.appendChild(stopButton);
                 container.appendChild(phraseDiv);
             } else {
                 container.textContent = 'All phrases completed!';
@@ -152,11 +144,6 @@
             }, (endTime - startTime) * 1000);
         }
 
-        function stopPlayback() {
-            player.pauseVideo();
-            stopRecognition();
-        }
-
         function showCheckButton() {
             var controlContainer = document.getElementById('control-container');
             controlContainer.innerHTML = '';
@@ -168,7 +155,6 @@
                 if (isRecognitionActive) {
                     stopRecognition();
                 } else {
-                    stopPlayback();
                     startRecognition();
                 }
             };
@@ -178,6 +164,7 @@
         function startRecognition() {
             var phrase = phrases[currentPhraseIndex];
             var expectedText = phrase.text.toLowerCase();
+            resultContainer.textContent = '';
 
             if (!('webkitSpeechRecognition' in window)) {
                 alert('Speech Recognition not supported');
@@ -201,12 +188,7 @@
                         interimTranscript += transcript + ' ';
                     }
                 }
-                interimResultContainer.textContent = 'You are saying: ' + interimTranscript;
-            };
-
-            recognition.onerror = function(event) {
-                console.error('Recognition error:', event.error);
-                isRecognitionActive = false;
+                interimResultContainer.textContent = interimTranscript;
             };
 
             recognition.start();
@@ -231,6 +213,7 @@
         function updateProgress() {
             var progress = (correctCount / phrases.length) * 100;
             progressFill.style.width = progress + '%';
+            progressFill.textContent = progress.toFixed(0) + '% completed';
         }
 
     </script>
