@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Phrase Replay System</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        body { background-color: #000; color: #fff; font-family: Arial, sans-serif; padding: 20px; box-sizing: border-box; }
+        .button-style {
+            background-color: #3498db;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .button-style:hover { background-color: #2980b9; }
+
+        .phrase-container { margin-bottom: 15px; }
+        .result-container { margin-top: 15px; font-size: 16px; font-weight: bold; color: #fff; }
+        .interim-result-container { margin-top: 10px; font-size: 14px; color: #3498db; }
+        .progress-bar {
+            width: 100%;
+            background-color: #444;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .progress-fill {
+            height: 20px;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phrase Replay System</h1>
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill">0% completed</div>
+    </div>
+    <div class="video-container">
+        <div id="player"></div>
+    </div>
+    <div id="phrases-container"></div>
+    <div id="control-container"></div>
+    <div id="result-container" class="result-container"></div>
+    <div id="interim-result-container" class="interim-result-container"></div>
+
+    <script>
+        var player;
+        var phrases = [];
+        var currentPhraseIndex = 0;
+        var recognition;
+        var isRecognitionActive = false;
+        var resultContainer = document.getElementById('result-container');
+        var interimResultContainer = document.getElementById('interim-result-container');
+        var progressFill = document.getElementById('progress-fill');
+        var correctCount = 0;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: 'IOHTbJd3rGM',
+                playerVars: { rel: 0, modestbranding: 1, controls: 1, fs: 0, autoplay: 0, disablekb: 1 },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            loadPhrases();
+        }
+
+        function loadPhrases() {
+            fetch('./phrases.json')
+                .then(response => response.json())
+                .then(data => {
+                    phrases = data;
+                    renderPhrase();
+                })
+                .catch(error => console.error('Error loading phrases:', error));
+        }
+
+        function renderPhrase() {
+            var container = document.getElementById('phrases-container');
+            var controlContainer = document.getElementById('control-container');
+            container.innerHTML = '';
+            controlContainer.innerHTML = '';
+            interimResultContainer.textContent = '';
+
+            if (currentPhraseIndex < phrases.length) {
+                var phrase = phrases[currentPhraseIndex];
+                var phraseDiv = document.createElement('div');
+                phraseDiv.className = 'phrase-container';
+
+                var textSpan = document.createElement('span');
+                textSpan.textContent = phrase.text + " ";
+                phraseDiv.appendChild(textSpan);
+
+                var playButton = document.createElement('button');
+                playButton.className = 'button-style';
+                playButton.textContent = 'Play';
+                playButton.onclick = function() {
+                    stopRecognition();
+                    playPhrase(phrase.start, phrase.end);
+                };
+
+                phraseDiv.appendChild(document.createElement('br'));
+                phraseDiv.appendChild(playButton);
+                container.appendChild(phraseDiv);
+            } else {
+                container.textContent = 'All phrases completed!';
+            }
+        }
+
+        function startRecognition() {
+            interimResultContainer.textContent = '';
+            resultContainer.textContent = '';
+            var phrase = phrases[currentPhraseIndex];
+            var expectedText = phrase.text.toLowerCase();
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+            isRecognitionActive = true;
+
+            recognition.onresult = function(event) {
+                var interimTranscript = '';
+                for (var i = event.resultIndex; i < event.results.length; i++) {
+                    var transcript = event.results[i][0].transcript.toLowerCase();
+                    if (event.results[i].isFinal) {
+                        evaluateResult(transcript, expectedText);
+                        isRecognitionActive = false;
+                    } else {
+                        interimTranscript += transcript + ' ';
+                    }
+                }
+                interimResultContainer.textContent = interimTranscript;
+            };
+
+            recognition.start();
+        }
+
+        function stopRecognition() {
+            if (recognition) {
+                recognition.stop();
+                recognition = null;
+                isRecognitionActive = false;
+                interimResultContainer.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>
